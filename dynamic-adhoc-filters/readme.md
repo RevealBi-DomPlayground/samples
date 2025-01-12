@@ -1,5 +1,28 @@
 # Adding Dynamic / Ad-Hoc Filters to a Reveal Dashboard
 
+This project demonstrates a dynamic dashboard filter builder using the Reveal BI TypeScript DOM API. It enables users to interactively create and manage dashboard filters through a user-friendly interface, supporting both date-based and data-based filtering capabilities. This application showcases how to integrate Reveal BI's powerful visualization capabilities with custom filter controls, allowing users to select fields from their dashboards and automatically generate appropriate filter types while maintaining a responsive and intuitive user experience.
+
+🔗 **Helpful Resources**: 
+* **Try Reveal for free**: [https://www.revealbi.io/](https://www.revealbi.io/)
+* **Upcoming webinars**: [https://www.revealbi.io/webinars](https://www.revealbi.io/webinars)
+
+📲 **Follow Us**: 
+* X: [https://x.com/reveal_bi](https://x.com/reveal_bi)
+* Facebook: [/revealbi.io](/revealbi.io)
+* LinkedIn: [/revealbi](/revealbi)
+* Instagram: [/reveal.bi](/reveal.bi)
+
+🚀 **Key Highlights**: 
+* Dynamic field detection and automatic filter type assignment based on data types
+* Smart handling of date filters with enforcement of single date filter rule
+* Support for multi-select data filters with empty selection capability
+* Real-time dashboard updates using Reveal BI's DOM API
+* Seamless integration with existing dashboards through dropdown selection
+* Interactive field selection with visual indicators for data types
+* Error handling with user-friendly notifications and loading states
+
+🔧 **Built With**:
+* Reveal BI TypeScript DOM - https://github.com/RevealBi/revealbi-dom
 
 <img width="1679" alt="image" src="https://github.com/user-attachments/assets/6b9f9af2-2433-45cf-a78c-2bafc541c03e" />
 
@@ -112,20 +135,3 @@ Once filters are added:
    - Click to see available values
    - Select one or multiple values
    - Use the search box to find specific values
-
-## Troubleshooting Tips
-
-1. If the application seems stuck:
-   - Check for the loading spinner
-   - Wait for any ongoing operations to complete
-   - Refresh the page if needed
-
-2. If filters aren't working:
-   - Check the field selection
-   - Verify the dashboard loaded properly
-   - Look for error messages in the alert box
-
-3. If the dashboard doesn't update:
-   - Ensure all selections are complete
-   - Check for any error messages
-   - Try reloading the dashboard
