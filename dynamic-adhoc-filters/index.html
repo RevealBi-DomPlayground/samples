@@ -2,13 +2,16 @@
 <html lang="en">
 
 <head>
+  <!-- Standard meta tags and external resource imports -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard UI</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <!-- External Dependencies:
+       - Bootstrap 5.3.0: For responsive UI components and styling
+       - jQuery 3.6.0: For DOM manipulation and AJAX
+       - DayJS: Modern JavaScript date library
+       - Reveal BI: Business intelligence visualization library -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles2.css" />
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.8.21/dayjs.min.js"></script>
@@ -18,25 +21,23 @@
 </head>
 
 <body>
-  <!-- Loading Overlay -->
+  <!-- Loading Overlay: Displays a spinner during asynchronous operations -->
   <div id="loading-overlay" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1000;">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
 
-  <!-- Top Bar -->
+  <!-- Main Application Layout -->
   <div id="top-bar" class="text-center p-2 bg-light border-bottom">
     <img src="images/reveal.png" alt="Reveal Logo" style="height: 40px;" /> | Dynamic Filters
   </div>
 
   <div id="main-container" class="d-flex">
-    <!-- Left Panel -->
+    <!-- Left Panel: Contains dashboard selection and filter controls -->
     <div id="left-panel" class="p-3 border-end">
-      <!-- Error Alert -->
       <div id="error-alert" class="alert alert-danger d-none" role="alert"></div>
       
-      <!-- Dashboard Combo Box -->
       <div class="form-group">
         <label for="dashboard-select" class="form-label">Select Dashboard:</label>
         <select id="dashboard-select" class="form-select mb-3">
@@ -44,17 +45,15 @@
         </select>
       </div>
 
-      <!-- Fields List -->
       <div id="fields-list-container">
         <h5>Fields</h5>
         <div id="fields-list" class="mb-3"></div>
       </div>
 
-      <!-- Add Filters Button -->
       <button id="add-filters-button" class="btn btn-primary" disabled>Add Filters</button>
     </div>
 
-    <!-- Right Panel -->
+    <!-- Right Panel: Contains the Reveal BI dashboard viewer -->
     <div id="right-panel">
       <rv-reveal-view id="viewer"></rv-reveal-view>
     </div>
@@ -62,75 +61,121 @@
 
   <script>
     $(document).ready(async function() {
-      // Set up Reveal SDK
-      
-      //$.ig.RevealSdkSettings.setBaseUrl("https://localhost:7209");
+      // Initialize Reveal SDK with the backend API URL
       $.ig.RevealSdkSettings.setBaseUrl("https://acmeanalyticsserver.azurewebsites.net/");
 
-
-      // Constants
+      // Configuration object: Contains API endpoints and base URLs
       const CONFIG = {
-        //API_BASE_URL: 'https://localhost:7209',
         API_BASE_URL: 'https://acmeanalyticsserver.azurewebsites.net',
         DASHBOARDS_ENDPOINT: '/dashboards/names'
       };
 
+      // Tracks the currently loaded dashboard instance
       let currentDashboard = null;
 
-      // Utility Functions
+      /**
+       * Utility Functions Object
+       * Contains helper methods for common operations throughout the application
+       */
       const utils = {
+        /**
+         * Displays an error message to the user
+         * @param {string} message - The error message to display
+         * Message automatically hides after 5 seconds
+         */
         showError: (message) => {
           const errorAlert = $('#error-alert');
           errorAlert.text(message).removeClass('d-none');
           setTimeout(() => errorAlert.addClass('d-none'), 5000);
         },
         
+        /**
+         * Controls the visibility of the loading overlay
+         * @param {boolean} show - Whether to show or hide the loading overlay
+         */
         showLoading: (show = true) => {
           $('#loading-overlay').toggleClass('d-none', !show);
         },
         
+        /**
+         * Maps data types to their corresponding icon images
+         * @param {string} dataType - The data type to get an icon for
+         * @returns {string} The filename of the appropriate icon
+         */
         getFieldImage: (dataType) => {
           const typeMap = {
             'String': 'text.png',
             'DateTime': 'date.png',
-            'Date': 'date.png',  // Added Date type
+            'Date': 'date.png',
             'Number': 'number.png'
           };
           return typeMap[dataType.trim()] || 'text.png';
         },
 
-        // Helper to check if a field is a date type
+        /**
+         * Checks if a field is a date type
+         * @param {string} dataType - The data type to check
+         * @returns {boolean} True if the field is a date type
+         */
         isDateField: (dataType) => {
           const type = dataType.trim();
           return type === 'DateTime' || type === 'Date';
         }
       };
 
+      /**
+       * Loads available dashboards from the server
+       * - Fetches dashboard list from API
+       * - Populates dashboard select dropdown
+       * - Loads the first dashboard by default
+       * @throws {Error} If the API request fails
+       */
       async function loadDashboards() {
+        // Show loading overlay
         utils.showLoading();
         try {
+          // Fetch the dashboard list from the API
           const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.DASHBOARDS_ENDPOINT}`);
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           
+          // Parse the response JSON to get the list of dashboards
           const dashboards = await response.json();
           const dashboardSelect = $('#dashboard-select');
-          dashboards.forEach(dashboard => {
+          
+          // Populate the dashboard select dropdown with the fetched dashboards
+          dashboards.forEach((dashboard, index) => {
             dashboardSelect.append(
               `<option value="${dashboard.dashboardFileName}">${dashboard.dashboardTitle}</option>`
             );
           });
 
+          // If there are dashboards available, load the first one by default
           if (dashboards.length) {
+            // Set the first dashboard as the selected item in the dropdown
+            dashboardSelect.val(dashboards[0].dashboardFileName);
+            
+            // Load the first dashboard
             await loadDashboard(dashboards[0].dashboardFileName);
+            
+            // Enable the add-filters button
             $('#add-filters-button').prop('disabled', false);
           }
         } catch (error) {
+          // Show error message if the API request fails
           utils.showError('Error loading dashboards: ' + error.message);
         } finally {
+          // Hide loading overlay
           utils.showLoading(false);
         }
       }
 
+      /**
+       * Loads a specific dashboard and its fields
+       * @param {string} dashboardName - The name of the dashboard to load
+       * - Creates a new RdashDocument instance
+       * - Converts it to a Reveal dashboard
+       * - Populates the fields list
+       */
       async function loadDashboard(dashboardName) {
         utils.showLoading();
         try {
@@ -146,10 +191,17 @@
         }
       }
 
+      /**
+       * Populates the fields list from the dashboard
+       * @param {Object} dashboard - The dashboard object containing fields
+       * - Gets fields from the last visualization in the dashboard
+       * - Creates checkboxes for each field with appropriate icons
+       */
       function populateFields(dashboard) {
         const fieldsList = $('#fields-list');
         fieldsList.empty();
 
+        // Get fields from the last visualization
         const lastVisualization = dashboard.visualizations.slice(-1)[0];
         if (!lastVisualization?.dataDefinition?.fields) {
           fieldsList.append('<p class="text-muted">No fields available.</p>');
@@ -157,18 +209,30 @@
         }
 
         lastVisualization.dataDefinition.fields.forEach(field => {
+          const fieldHtml = createFieldHtml(field);
+          fieldsList.append(fieldHtml);
+        });
+
+        function createFieldHtml(field) {
           const fieldTypeImage = utils.getFieldImage(field.dataType);
-          fieldsList.append(`
+          return `
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="${field.fieldName}">
               <label class="form-check-label" for="${field.fieldName}">
                 <img src="images/${fieldTypeImage}" alt="${field.dataType}" style="width: 20px; margin-right: 5px;">${field.fieldName}
               </label>
             </div>
-          `);
-        });
+          `;
+        }
       }
 
+      /**
+       * Adds selected fields as filters to the dashboard
+       * - Handles both date filters and data filters differently
+       * - Enforces single date filter rule
+       * - Creates filter bindings for all visualizations
+       * - Updates the dashboard view after adding filters
+       */
       async function addFiltersToDashboard() {
         if (!currentDashboard) {
             utils.showError('No dashboard loaded.');
@@ -185,6 +249,7 @@
         }
 
         try {
+            // Get the data source from the last visualization
             const lastDataSourceItem = currentDashboard.visualizations
                 .slice(-1)[0]?.dataDefinition?.dataSourceItem;
 
@@ -192,34 +257,53 @@
                 throw new Error('No DataSourceItem found in the dashboard.');
             }
 
-            // Check if there's an existing date filter
+            // Check for existing date filters
             const existingDateFilter = currentDashboard.filters.some(
                 f => f instanceof dom.DashboardDateFilter
             );
 
-            // Identify selected date fields
+            // Filter the selectedFields array to include only date fields
             const selectedDateFields = selectedFields.filter(filterColumn => {
+                // Access the last visualization object from the currentDashboard's visualizations array
+                // The slice(-1) method returns a new array containing only the last element of the visualizations array
+                // The optional chaining operator (?.) ensures that the code does not throw an error if any part of the chain is null or undefined
                 const field = currentDashboard.visualizations
                     .slice(-1)[0]?.dataDefinition?.fields
+                    // Use the find method to search for a field object where the fieldName matches the current filterColumn
+                    // The find method returns the first element in the array that satisfies the provided testing function or undefined if no such element is found
                     .find(f => f.fieldName === filterColumn);
+                
+                // Return true if the field is found and the utils.isDateField function returns true for the dataType of the field
+                // The utils.isDateField function is assumed to be a utility function that checks if a given data type represents a date field
                 return field && utils.isDateField(field.dataType);
             });
 
-            // Handle multiple date fields selection
+            // Enforce single date filter rule
+            // Check if more than one date field is selected or if there is already an existing date filter and at least one date field is selected
             if (selectedDateFields.length > 1 || (existingDateFilter && selectedDateFields.length > 0)) {
+                // Alert the user that only one date filter is allowed
                 alert("Only one date filter is allowed. Please select only one date field.");
+                
+                // Iterate over each date field in the selectedDateFields array
                 selectedDateFields.forEach(dateField => {
+                    // Uncheck the corresponding checkbox element in the DOM for each date field
                     $(`#${dateField}`).prop("checked", false);
                 });
                 
+                // Create a new array nonDateFields by filtering the selectedFields array to include only non-date fields
                 const nonDateFields = selectedFields.filter(field => !selectedDateFields.includes(field));
+                
+                // Check if there are no non-date fields left
                 if (nonDateFields.length === 0) {
+                    // Return early to stop further execution if no non-date fields are left
                     return;
                 }
+                
+                // Update the selectedFields array to be the nonDateFields array, excluding date fields
                 selectedFields = nonDateFields;
             }
 
-            // Process remaining fields
+            // Process each selected field
             for (const filterColumn of selectedFields) {
                 const field = currentDashboard.visualizations
                     .slice(-1)[0]?.dataDefinition?.fields
@@ -230,37 +314,66 @@
                     continue;
                 }
 
+                // Handle date fields differently from other filter types
+                // DateFilter vs. DataFilter
                 if (utils.isDateField(field.dataType)) {
                     if (existingDateFilter) {
                         continue;
                     }
+                    // Create a new instance of DashboardDateFilter
                     const dateFilter = new dom.DashboardDateFilter();
+
+                    // Set the title of the date filter to the name of the column to be filtered
                     dateFilter.title = filterColumn;
+
+                    // Set the rule type of the date filter to apply to all time periods
                     dateFilter.ruleType = dom.DateRuleType.AllTime;
+
+                    // Add the date filter to the filters array of the current dashboard
                     currentDashboard.filters.push(dateFilter);
 
+                    // Iterate over each visualization in the current dashboard
                     currentDashboard.visualizations.forEach(viz => {
+                        // Create a new instance of DashboardDateFilterBinding with the filter column
                         const filterBinding = new dom.DashboardDateFilterBinding(filterColumn);
+
+                        // Add the filter binding to the filterBindings array of the current visualization
                         viz.filterBindings.push(filterBinding);
                     });
                 } else {
+                    // Create a new instance of DashboardDataFilter with the filter column and the last data source item
                     const dataFilter = new dom.DashboardDataFilter(filterColumn, lastDataSourceItem);
+
+                    // Set the title of the data filter to the name of the column to be filtered
                     dataFilter.title = filterColumn;
+
+                    // Set the field name of the data filter to the name of the column to be filtered
                     dataFilter.fieldName = filterColumn;
+
+                    // Allow multiple selections for the data filter
                     dataFilter.allowMultipleSelection = true;
+
+                    // Allow empty selections for the data filter
                     dataFilter.allowEmptySelection = true;
 
+                    // Add the data filter to the filters array of the current dashboard
                     currentDashboard.filters.push(dataFilter);
 
+                    // Add filter bindings to all visualizations in the current dashboard
                     currentDashboard.visualizations.forEach(viz => {
+                        // Create a new instance of DashboardDataFilterBinding with the data filter
                         const filterBinding = new dom.DashboardDataFilterBinding(dataFilter);
+
+                        // Add the filter binding to the filterBindings array of the current visualization
                         viz.filterBindings.push(filterBinding);
                     });
                 }
 
+                // Disable the checkbox after adding the filter
                 $(`#${filterColumn}`).prop("checked", false).prop("disabled", true);
             }
 
+            // Update the dashboard view
             const revealView = document.getElementById("viewer");
             revealView.dashboard = await currentDashboard.toRVDashboard();
 
@@ -270,6 +383,12 @@
       }
 
       // Event Listeners
+      
+      /**
+       * Dashboard Selection Change Handler
+       * - Loads the selected dashboard
+       * - Enables/disables the add filters button based on load success
+       */
       $('#dashboard-select').on('change', async function() {
         const dashboardName = $(this).val();
         if (!dashboardName) return;
@@ -282,9 +401,10 @@
         }
       });
 
+      // Add filters button click handler
       $('#add-filters-button').on('click', addFiltersToDashboard);
 
-      // Initialize
+      // Initialize the application by loading dashboards
       await loadDashboards();
     });
   </script>
