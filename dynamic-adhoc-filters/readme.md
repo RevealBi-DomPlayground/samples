@@ -23,6 +23,7 @@ This project demonstrates a dynamic dashboard filter builder using the Reveal BI
 
 🔧 **Built With**:
 * Reveal BI TypeScript DOM - https://github.com/RevealBi/revealbi-dom
+* Reveal BI - https://www.revealbi.io/
 
 <img width="1679" alt="image" src="https://github.com/user-attachments/assets/6b9f9af2-2433-45cf-a78c-2bafc541c03e" />
 
