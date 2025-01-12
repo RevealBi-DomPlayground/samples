@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard UI</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/styles2.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.8.21/dayjs.min.js"></script>
+  <script src="https://dl.revealbi.io/reveal/libs/1.7.1/infragistics.reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal-sdk-wrappers/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@revealbi/dom/index.umd.min.js"></script>
+</head>
+
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75" style="z-index: 1000;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Top Bar -->
+  <div id="top-bar" class="text-center p-2 bg-light border-bottom">
+    <img src="images/reveal.png" alt="Reveal Logo" style="height: 40px;" /> | Dynamic Filters
+  </div>
+
+  <div id="main-container" class="d-flex">
+    <!-- Left Panel -->
+    <div id="left-panel" class="p-3 border-end">
+      <!-- Error Alert -->
+      <div id="error-alert" class="alert alert-danger d-none" role="alert"></div>
+      
+      <!-- Dashboard Combo Box -->
+      <div class="form-group">
+        <label for="dashboard-select" class="form-label">Select Dashboard:</label>
+        <select id="dashboard-select" class="form-select mb-3">
+          <option value="">Select a dashboard...</option>
+        </select>
+      </div>
+
+      <!-- Fields List -->
+      <div id="fields-list-container">
+        <h5>Fields</h5>
+        <div id="fields-list" class="mb-3"></div>
+      </div>
+
+      <!-- Add Filters Button -->
+      <button id="add-filters-button" class="btn btn-primary" disabled>Add Filters</button>
+    </div>
+
+    <!-- Right Panel -->
+    <div id="right-panel">
+      <rv-reveal-view id="viewer"></rv-reveal-view>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(async function() {
+      // Set up Reveal SDK
+      
+      //$.ig.RevealSdkSettings.setBaseUrl("https://localhost:7209");
+      $.ig.RevealSdkSettings.setBaseUrl("https://acmeanalyticsserver.azurewebsites.net/");
+
+
+      // Constants
+      const CONFIG = {
+        //API_BASE_URL: 'https://localhost:7209',
+        API_BASE_URL: 'https://acmeanalyticsserver.azurewebsites.net',
+        DASHBOARDS_ENDPOINT: '/dashboards/names'
+      };
+
+      let currentDashboard = null;
+
+      // Utility Functions
+      const utils = {
+        showError: (message) => {
+          const errorAlert = $('#error-alert');
+          errorAlert.text(message).removeClass('d-none');
+          setTimeout(() => errorAlert.addClass('d-none'), 5000);
+        },
+        
+        showLoading: (show = true) => {
+          $('#loading-overlay').toggleClass('d-none', !show);
+        },
+        
+        getFieldImage: (dataType) => {
+          const typeMap = {
+            'String': 'text.png',
+            'DateTime': 'date.png',
+            'Date': 'date.png',  // Added Date type
+            'Number': 'number.png'
+          };
+          return typeMap[dataType.trim()] || 'text.png';
+        },
+
+        // Helper to check if a field is a date type
+        isDateField: (dataType) => {
+          const type = dataType.trim();
+          return type === 'DateTime' || type === 'Date';
+        }
+      };
+
+      async function loadDashboards() {
+        utils.showLoading();
+        try {
+          const response = await fetch(`${CONFIG.API_BASE_URL}${CONFIG.DASHBOARDS_ENDPOINT}`);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          
+          const dashboards = await response.json();
+          const dashboardSelect = $('#dashboard-select');
+          dashboards.forEach(dashboard => {
+            dashboardSelect.append(
+              `<option value="${dashboard.dashboardFileName}">${dashboard.dashboardTitle}</option>`
+            );
+          });
+
+          if (dashboards.length) {
+            await loadDashboard(dashboards[0].dashboardFileName);
+            $('#add-filters-button').prop('disabled', false);
+          }
+        } catch (error) {
+          utils.showError('Error loading dashboards: ' + error.message);
+        } finally {
+          utils.showLoading(false);
+        }
+      }
+
+      async function loadDashboard(dashboardName) {
+        utils.showLoading();
+        try {
+          currentDashboard = await dom.RdashDocument.load(dashboardName);
+          const revealView = document.getElementById("viewer");
+          revealView.dashboard = await currentDashboard.toRVDashboard();
+          populateFields(currentDashboard);
+        } catch (error) {
+          utils.showError('Error loading dashboard: ' + error.message);
+          throw error;
+        } finally {
+          utils.showLoading(false);
+        }
+      }
+
+      function populateFields(dashboard) {
+        const fieldsList = $('#fields-list');
+        fieldsList.empty();
+
+        const lastVisualization = dashboard.visualizations.slice(-1)[0];
+        if (!lastVisualization?.dataDefinition?.fields) {
+          fieldsList.append('<p class="text-muted">No fields available.</p>');
+          return;
+        }
+
+        lastVisualization.dataDefinition.fields.forEach(field => {
+          const fieldTypeImage = utils.getFieldImage(field.dataType);
+          fieldsList.append(`
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="${field.fieldName}">
+              <label class="form-check-label" for="${field.fieldName}">
+                <img src="images/${fieldTypeImage}" alt="${field.dataType}" style="width: 20px; margin-right: 5px;">${field.fieldName}
+              </label>
+            </div>
+          `);
+        });
+      }
+
+      async function addFiltersToDashboard() {
+        if (!currentDashboard) {
+            utils.showError('No dashboard loaded.');
+            return;
+        }
+
+        const selectedFields = $('#fields-list input:checked').map(function() {
+            return $(this).attr('id');
+        }).get();
+
+        if (selectedFields.length === 0) {
+            utils.showError('Please select at least one field.');
+            return;
+        }
+
+        try {
+            const lastDataSourceItem = currentDashboard.visualizations
+                .slice(-1)[0]?.dataDefinition?.dataSourceItem;
+
+            if (!lastDataSourceItem) {
+                throw new Error('No DataSourceItem found in the dashboard.');
+            }
+
+            // Check if there's an existing date filter
+            const existingDateFilter = currentDashboard.filters.some(
+                f => f instanceof dom.DashboardDateFilter
+            );
+
+            // Identify selected date fields
+            const selectedDateFields = selectedFields.filter(filterColumn => {
+                const field = currentDashboard.visualizations
+                    .slice(-1)[0]?.dataDefinition?.fields
+                    .find(f => f.fieldName === filterColumn);
+                return field && utils.isDateField(field.dataType);
+            });
+
+            // Handle multiple date fields selection
+            if (selectedDateFields.length > 1 || (existingDateFilter && selectedDateFields.length > 0)) {
+                alert("Only one date filter is allowed. Please select only one date field.");
+                selectedDateFields.forEach(dateField => {
+                    $(`#${dateField}`).prop("checked", false);
+                });
+                
+                const nonDateFields = selectedFields.filter(field => !selectedDateFields.includes(field));
+                if (nonDateFields.length === 0) {
+                    return;
+                }
+                selectedFields = nonDateFields;
+            }
+
+            // Process remaining fields
+            for (const filterColumn of selectedFields) {
+                const field = currentDashboard.visualizations
+                    .slice(-1)[0]?.dataDefinition?.fields
+                    .find(f => f.fieldName === filterColumn);
+
+                if (!field) {
+                    console.error(`Field ${filterColumn} not found in the dashboard.`);
+                    continue;
+                }
+
+                if (utils.isDateField(field.dataType)) {
+                    if (existingDateFilter) {
+                        continue;
+                    }
+                    const dateFilter = new dom.DashboardDateFilter();
+                    dateFilter.title = filterColumn;
+                    dateFilter.ruleType = dom.DateRuleType.AllTime;
+                    currentDashboard.filters.push(dateFilter);
+
+                    currentDashboard.visualizations.forEach(viz => {
+                        const filterBinding = new dom.DashboardDateFilterBinding(filterColumn);
+                        viz.filterBindings.push(filterBinding);
+                    });
+                } else {
+                    const dataFilter = new dom.DashboardDataFilter(filterColumn, lastDataSourceItem);
+                    dataFilter.title = filterColumn;
+                    dataFilter.fieldName = filterColumn;
+                    dataFilter.allowMultipleSelection = true;
+                    dataFilter.allowEmptySelection = true;
+
+                    currentDashboard.filters.push(dataFilter);
+
+                    currentDashboard.visualizations.forEach(viz => {
+                        const filterBinding = new dom.DashboardDataFilterBinding(dataFilter);
+                        viz.filterBindings.push(filterBinding);
+                    });
+                }
+
+                $(`#${filterColumn}`).prop("checked", false).prop("disabled", true);
+            }
+
+            const revealView = document.getElementById("viewer");
+            revealView.dashboard = await currentDashboard.toRVDashboard();
+
+        } catch (error) {
+            utils.showError('Error adding filters: ' + error.message);
+        }
+      }
+
+      // Event Listeners
+      $('#dashboard-select').on('change', async function() {
+        const dashboardName = $(this).val();
+        if (!dashboardName) return;
+
+        try {
+          await loadDashboard(dashboardName);
+          $('#add-filters-button').prop('disabled', false);
+        } catch (error) {
+          $('#add-filters-button').prop('disabled', true);
+        }
+      });
+
+      $('#add-filters-button').on('click', addFiltersToDashboard);
+
+      // Initialize
+      await loadDashboards();
+    });
+  </script>
+</body>
+</html>
