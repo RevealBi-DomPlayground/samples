@@ -2,6 +2,14 @@
 
 This project demonstrates a dynamic dashboard filter builder using the Reveal BI TypeScript DOM API. It enables users to interactively create and manage dashboard filters through a user-friendly interface, supporting both date-based and data-based filtering capabilities. This application showcases how to integrate Reveal BI's powerful visualization capabilities with custom filter controls, allowing users to select fields from their dashboards and automatically generate appropriate filter types while maintaining a responsive and intuitive user experience.
 
+🎥 **Video Walkthrough**: 
+
+<a href="https://www.youtube.com/watch?v=CyxmOsfEXTU" target="_blank">
+  <img src="https://img.youtube.com/vi/CyxmOsfEXTU/0.jpg" alt="Watch the Video" style="width:250px; height:auto;">
+</a>
+
+
+
 🔗 **Helpful Resources**: 
 * **Try Reveal for free**: [https://www.revealbi.io/](https://www.revealbi.io/)
 * **Upcoming webinars**: [https://www.revealbi.io/webinars](https://www.revealbi.io/webinars)
