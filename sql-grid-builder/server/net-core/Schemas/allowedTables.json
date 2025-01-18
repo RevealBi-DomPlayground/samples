@@ -1,0 +1,22 @@
+[
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "EmployeeDetailsExtended",
+    "COLUMN_NAME": ""
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "OrderLineItems",
+    "COLUMN_NAME": "CustomerID"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "OrderSummary",
+    "COLUMN_NAME": "CustomerID"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "ProductSummary",
+    "COLUMN_NAME": ""
+  }
+]

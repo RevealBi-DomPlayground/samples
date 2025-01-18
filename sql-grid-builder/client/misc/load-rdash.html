@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reveal Sdk - Load Dashboard</title>      
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js" ></script>    
+    <script>window.revealDisableKeyboardManagement = true;</script>   
+    <script src="https://dl.revealbi.io/reveal/libs/1.7.0/infragistics.reveal.js"></script>
+
+    <script type="text/javascript">
+        $.ig.RevealSdkSettings.setBaseUrl("http://localhost:5082/");  
+       // $.ig.RevealSdkSettings.setBaseUrl("https://localhost:7219/");  
+
+        // enable interactive hovering
+        $.ig.RevealSdkSettings.enableActionsOnHoverTooltip = true;
+        
+        $.ig.RVDashboard.loadDashboard("underlyingdata").then(dashboard => { 
+            var revealView = new $.ig.RevealView("#revealView");        
+            //revealView.canEdit = false;
+            revealView.interactiveFilteringEnabled = true;        
+            revealView.dashboard = dashboard;
+        });
+    </script>
+    <div id="revealView" style="height: calc(100vh - 25px); width: 100%;"></div>
+</body>
+
+</html>

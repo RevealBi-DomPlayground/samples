@@ -1,0 +1,73 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #E9EBF2;
+    overflow: hidden;
+}
+.top-bar {
+    width: 100%;
+    background-color: white;
+    color: #333;
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    position: fixed;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.top-bar img {
+    height: 30px;
+    margin-right: 10px;
+}
+.top-bar h1 {
+    font-size: 18px;
+    margin: 0;
+}
+.hamburger {
+    cursor: pointer;
+    font-size: 20px;
+    margin-right: 10px;
+}
+.container {
+    display: flex;
+    margin-top: 50px;
+    height: calc(100vh - 50px);
+}
+.sidebar {
+    width: 15%;
+    background-color: #f4f4f4;
+    padding: 10px;
+    box-sizing: border-box;
+    transition: width 0.3s ease, opacity 0.3s ease;
+}
+.main-content {
+    flex: 1;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: white;
+    border-radius: 10px;
+    overflow-y: auto;
+}
+/* .sidebar h2 {
+    margin-top: 0;
+} */
+
+.sidebar select,
+.sidebar label {
+    /* font-weight: bold; */
+    display: block;
+    margin-bottom: 0px;
+    margin-top: 20px; 
+    display: block; 
+}
+
+#tableSelector {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
