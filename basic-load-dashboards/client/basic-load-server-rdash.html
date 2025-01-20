@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reveal SDK - Load Server-Side Dashboard</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.8.21/dayjs.min.js"></script>
+  <script src="https://dl.revealbi.io/reveal/libs/1.7.1/infragistics.reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal-sdk-wrappers/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@revealbi/dom/index.umd.min.js"></script>
+</head>
+<body>
+  <div class="top-bar">
+    <img src="assets/reveal.png" alt="Reveal Logo" />
+    <h1>| DOM Server Load</h1>
+  </div>
+  <div class="container">
+    <div class="main-content" id="main-content">
+
+    <!--  Dashboard container for typical jQuery approach -->    
+    <!-- <div id="viewer" style="height: 100%; width: 100%;"></div> -->
+    
+    <!--  Web Component wrapper using Reveal SDK wrappers -->    
+    <rv-reveal-view id="viewer" ></rv-reveal-view>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        $.ig.RevealSdkSettings.setBaseUrl("http://localhost:5082/");
+        const dashboard = await dom.RdashDocument.load("Healthcare");
+        console.log(`Loaded Dashboard Title: ${dashboard.title}`);
+        const rvDashboard = await dashboard.toRVDashboard();
+
+        // Dashboard container for typical jQuery approach   
+        // window.revealView = new $.ig.RevealView("#viewer");
+        // window.revealView.dashboard = rvDashboard;
+
+        // Web Component wrapper using Reveal wrappers
+        const revealView = document.getElementById("viewer");
+        revealView.dashboard = rvDashboard;
+
+     } );
+  </script>
+</body>
+</html>
