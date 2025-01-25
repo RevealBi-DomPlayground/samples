@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reveal SDK - Web Component</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.8.21/dayjs.min.js"></script>
+    <script src="https://dl.revealbi.io/reveal/libs/1.7.1/infragistics.reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal-sdk-wrappers/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@revealbi/dom@0.2.10/index.umd.min.js"></script>
+    <script>
+        $.ig.RevealSdkSettings.setBaseUrl("https://samples.revealbi.io/upmedia-backend/reveal-api/");
+    </script>
+</head>
+<body>
+    <rv-reveal-view id="viewer"></rv-reveal-view>
+    <script>
+        const createDashboard = () => {
+            // Create a new Reveal document
+            const document = new dom.RdashDocument("REST Dashboard");
+
+            // Define the JSON data source
+            const jsonDataSourceItem = new dom.RestDataSourceItem(
+                "Sales by Category",
+                "https://excel2json.io/api/share/6e0f06b3-72d3-4fec-7984-08da43f56bb9",
+                new dom.DataSource("JSON DS", "JSON DS Subtitle")
+            );
+
+            // Set properties for the data source
+            jsonDataSourceItem.subtitle = "JSON Data Source Item";
+            jsonDataSourceItem.isAnonymous = true;
+            jsonDataSourceItem.fields = [
+                new dom.NumberField("CategoryID"),
+                new dom.TextField("CategoryName"),
+                new dom.TextField("ProductName"),
+                new dom.NumberField("ProductSales"),
+            ];
+
+            // Create a pie chart visualization
+            const jsonChart = new dom.PieChartVisualization("JSON", jsonDataSourceItem)
+                .setLabel("CategoryName")
+                .setValue("ProductSales");
+
+            // Create another visualization
+            const jsonChart2 = new dom.ColumnChartVisualization("JSON", jsonDataSourceItem)
+                .setLabel("ProductName")
+                .setValue("ProductSales");
+
+            const jsonGrid = new dom.GridVisualization("Grid", jsonDataSourceItem)
+                .setColumns("CategoryID", "CategoryName", "ProductName", "ProductSales");
+
+            // Assign the visualization to the document
+            document.visualizations = [jsonChart, jsonChart2];
+
+            document.toJsonString();
+
+            return document;
+        };
+
+        // Create an async function to load the document and dashboard
+        const initializeDashboard = async () => {
+            try {
+                // First, create the dashboard
+                const dashboard = createDashboard();
+
+                // Wait for the 'Marketing' document to load
+                const newDocument = await loadDocument("Marketing");
+
+                // Import the dashboard into the new document
+                newDocument.import(dashboard, undefined, { includeDashboardFilters: true, includeVisualizationFilters: true });
+
+                // Get the Reveal view element and assign the dashboard
+                const revealView = document.getElementById("viewer");
+                revealView.dashboard = newDocument;
+
+            } catch (error) {
+                console.error("Error initializing dashboard:", error);
+            }
+        };
+
+        // Function to wrap 'load' in a promise for async/await
+        const loadDocument = (documentName) => {
+            return new Promise((resolve, reject) => {
+                try {
+                    const doc = dom.RdashDocument.load(documentName);
+                    resolve(doc);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        };
+
+        // Initialize the dashboard
+        initializeDashboard();
+    </script>
+</body>
+</html>
