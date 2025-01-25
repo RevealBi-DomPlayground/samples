@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reveal Sdk - Web Component</title>
+</head>
+
+<body>
+    <select id="vizCombo" onchange="onVisualizationSelected(this.value)">
+    </select>
+    <select id="chartTypesCombo" onchange="onChartTypeSelected(this.value)">
+    </select>
+    <div id="revealView" style="height: 95vh; width: 100%;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+    <script src="https://dl.revealbi.io/reveal/libs/1.7.2/infragistics.reveal.js"></script>
+
+    <script type="text/javascript">
+        // Set this to your server URL
+        $.ig.RevealSdkSettings.setBaseUrl("https://samples.revealbi.io/upmedia-backend/reveal-api/");
+
+        let revealView;
+        let widgetWrapper;
+
+        $.ig.RVDashboard.loadDashboard("Project Management").then(dashboard => {
+            revealView = new $.ig.RevealView("#revealView");
+            revealView.dashboard = dashboard;
+            loadVisualizations();
+        });
+
+        function onVisualizationSelected(vizId) {
+            widgetWrapper = revealView._dashboardView.__widgets.find(w => w._widget._id === vizId);
+            loadChartTypes(widgetWrapper);
+        }
+
+        function onChartTypeSelected(chartType) {
+            const newType = $.ig.VisualizationHelper.prototype.resolveTypeWithUID(chartType); // Get the chart type UID
+            widgetWrapper._widgetDelegate.handleVizChanged(newType, true, true); // Change the chart type
+        }
+
+        function loadVisualizations() {
+            const vizCombo = document.getElementById("vizCombo");
+            const visualizations = revealView.dashboard.visualizations;
+            visualizations.forEach(viz => {
+                const option = createOption(viz.id, viz.title);
+                vizCombo.appendChild(option);
+            });
+
+            // Automatically select the first visualization
+            if (vizCombo.options.length > 0) {
+                const firstVizId = vizCombo.options[0].value;
+                vizCombo.value = firstVizId;
+                onVisualizationSelected(firstVizId);
+            }
+        }
+
+        function loadChartTypes(widgetWrapper) {
+            const chartTypesCombo = document.getElementById("chartTypesCombo");
+            chartTypesCombo.innerHTML = "";
+            const supportedChartTypes = $.ig.VisualizationStore.prototype.instance().getVisualizationItems(widgetWrapper._initialWidgetType);
+
+            if (!supportedChartTypes || supportedChartTypes.length === 0) {
+                disableCombo(chartTypesCombo, "None");
+                return;
+            }
+
+            supportedChartTypes.forEach(chartType => {
+                const option = createOption(chartType, chartType);
+                chartTypesCombo.appendChild(option);
+            });
+
+            chartTypesCombo.disabled = false;
+            chartTypesCombo.value = $.ig.VisualizationHelper.prototype.uniqueIdentifier(widgetWrapper._widgetType);
+        }
+
+        function createOption(value, text) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.text = text;
+            return option;
+        }
+
+        function disableCombo(combo, defaultText) {
+            combo.disabled = true;
+            combo.appendChild(createOption("None", defaultText));
+        }
+
+    </script>
+</body>
+
+</html>
