@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reveal Sdk - Web Component</title>
+</head>
+
+<body>
+    <select id="vizCombo" onchange="onVisualizationSelected(this.value)">
+    </select>
+    <button id="duplicateButton" onclick="duplicateVizualization()">Duplicate Vizualization</button>
+    <div id="revealView" style="height: 95vh; width: 100%;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+    <script src="https://dl.revealbi.io/reveal/libs/1.7.2/infragistics.reveal.js"></script>
+
+    <script type="text/javascript">
+        // Set this to your server URL
+        $.ig.RevealSdkSettings.setBaseUrl("https://samples.revealbi.io/upmedia-backend/reveal-api/");
+
+        let revealView;
+        let widgetId;
+
+        $.ig.RVDashboard.loadDashboard("Project Management").then(dashboard => {
+            revealView = new $.ig.RevealView("#revealView");
+            revealView.dashboard = dashboard;
+            loadVisualizations();
+        });
+
+        function loadVisualizations() {
+            const vizCombo = document.getElementById("vizCombo");
+            const visualizations = revealView.dashboard.visualizations;
+            visualizations.forEach(viz => {
+                const option = createOption(viz.id, viz.title);
+                vizCombo.appendChild(option);
+            });
+
+            if (vizCombo.options.length > 0) {
+                widgetId = vizCombo.options[0].value;
+            }
+        }
+
+        function onVisualizationSelected(vizId) {
+            widgetId = vizId;
+        }
+
+        function duplicateVizualization() {
+            const widget = revealView._dashboardView.__widgets.find(widget => widget._widget._id === widgetId);
+            if (widget) {
+                revealView._dashboardView.widgetDuplicated(widget._widget);
+            }
+
+        }
+
+        function createOption(value, text) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.text = text;
+            return option;
+        }
+
+    </script>
+</body>
+
+</html>
