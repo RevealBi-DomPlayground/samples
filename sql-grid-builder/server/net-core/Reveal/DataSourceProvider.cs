@@ -17,7 +17,7 @@ namespace RevealSdk.Server.Reveal
         {
             if (dataSource is RVSqlServerDataSource sqlDs)
             {
-                sqlDs.Host = "jberes.database.windows.net";
+                sqlDs.Host = "windows.net";
                 sqlDs.Database = "northwindcloud";
             }
             return Task.FromResult(dataSource);
