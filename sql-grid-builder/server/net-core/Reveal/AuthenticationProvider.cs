@@ -13,7 +13,7 @@ namespace RevealSdk.Server.Reveal
             
             if (dataSource is RVSqlServerDataSource)
             {
-                userCredential = new RVUsernamePasswordDataSourceCredential("jasonberes", "=RevealJasonSdk09");
+                userCredential = new RVUsernamePasswordDataSourceCredential("", "");
             }
             return Task.FromResult(userCredential);
         }
