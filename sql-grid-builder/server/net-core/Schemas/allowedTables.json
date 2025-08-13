@@ -2,21 +2,101 @@
   {
     "TABLE_SCHEMA": "dbo",
     "TABLE_NAME": "EmployeeDetailsExtended",
-    "COLUMN_NAME": ""
+    "COLUMN_NAME": "",
+    "TYPE": "TABLE",
+    "FRIENDLY_NAME": "Employee Details"
   },
   {
     "TABLE_SCHEMA": "dbo",
     "TABLE_NAME": "OrderLineItems",
-    "COLUMN_NAME": "CustomerID"
+    "COLUMN_NAME": "CustomerID",
+    "TYPE": "TABLE",
+    "FRIENDLY_NAME": "Order Line Items"
   },
   {
     "TABLE_SCHEMA": "dbo",
     "TABLE_NAME": "OrderSummary",
-    "COLUMN_NAME": "CustomerID"
+    "COLUMN_NAME": "CustomerID",
+    "TYPE": "TABLE",
+    "FRIENDLY_NAME": "Order Summary"
   },
   {
     "TABLE_SCHEMA": "dbo",
     "TABLE_NAME": "ProductSummary",
-    "COLUMN_NAME": ""
+    "COLUMN_NAME": "",
+    "TYPE": "TABLE",
+    "FRIENDLY_NAME": "Product Summary"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "customerOrdersEmployees",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Customer Orders with Employees",
+    "QUERY": "SELECT c.CustomerID, c.CompanyName, c.ContactName, o.OrderID, o.OrderDate, o.EmployeeID, e.FirstName AS EmployeeFirstName, e.LastName AS EmployeeLastName FROM Customers c JOIN Orders o ON c.CustomerID = o.CustomerID JOIN Employees e ON o.EmployeeID = e.EmployeeID"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "productSalesQuery",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Product Sales Analysis",
+    "QUERY": "SELECT p.ProductID, p.ProductName, c.CategoryName, SUM(od.Quantity) AS TotalQuantity, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalRevenue, COUNT(DISTINCT o.OrderID) AS OrderCount FROM Products p JOIN Categories c ON p.CategoryID = c.CategoryID JOIN [Order Details] od ON p.ProductID = od.ProductID JOIN Orders o ON od.OrderID = o.OrderID GROUP BY p.ProductID, p.ProductName, c.CategoryName"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "customerSpendingSummary",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Customer Spending Summary",
+    "QUERY": "SELECT c.CustomerID, c.CompanyName, c.ContactName, c.Country, COUNT(o.OrderID) AS OrderCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSpent, AVG(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS AvgOrderValue FROM Customers c JOIN Orders o ON c.CustomerID = o.CustomerID JOIN [Order Details] od ON o.OrderID = od.OrderID GROUP BY c.CustomerID, c.CompanyName, c.ContactName, c.Country"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "monthlySalesTrend",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Monthly Sales Trend",
+    "QUERY": "SELECT YEAR(o.OrderDate) AS OrderYear, MONTH(o.OrderDate) AS OrderMonth, COUNT(DISTINCT o.OrderID) AS OrderCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS MonthlyRevenue FROM Orders o JOIN [Order Details] od ON o.OrderID = od.OrderID WHERE o.OrderDate IS NOT NULL GROUP BY YEAR(o.OrderDate), MONTH(o.OrderDate)"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "employeePerformance",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Employee Sales Performance",
+    "QUERY": "SELECT e.EmployeeID, e.FirstName + ' ' + e.LastName AS EmployeeName, COUNT(o.OrderID) AS OrderCount, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalSales, AVG(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS AvgOrderValue FROM Employees e JOIN Orders o ON e.EmployeeID = o.EmployeeID JOIN [Order Details] od ON o.OrderID = od.OrderID GROUP BY e.EmployeeID, e.FirstName, e.LastName"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "categorySalesByCountry",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Category Sales by Country",
+    "QUERY": "SELECT c.CategoryName, cu.Country, SUM(od.Quantity) AS TotalQuantity, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalRevenue FROM Categories c JOIN Products p ON c.CategoryID = p.CategoryID JOIN [Order Details] od ON p.ProductID = od.ProductID JOIN Orders o ON od.OrderID = o.OrderID JOIN Customers cu ON o.CustomerID = cu.CustomerID GROUP BY c.CategoryName, cu.Country"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "supplierProductPerformance",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Supplier Product Performance",
+    "QUERY": "SELECT s.CompanyName AS SupplierName, p.ProductName, SUM(od.Quantity) AS TotalQuantitySold, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalRevenue, AVG(od.UnitPrice) AS AverageSellingPrice, p.UnitPrice AS CurrentListPrice FROM Suppliers s JOIN Products p ON s.SupplierID = p.SupplierID JOIN [Order Details] od ON p.ProductID = od.ProductID GROUP BY s.CompanyName, p.ProductName, p.UnitPrice"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "orderFulfillmentTimes",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Order Fulfillment Times",
+    "QUERY": "SELECT o.OrderID, o.OrderDate, o.RequiredDate, o.ShippedDate, DATEDIFF(day, o.OrderDate, o.ShippedDate) AS DaysToShip, s.CompanyName AS ShipperName, e.FirstName + ' ' + e.LastName AS EmployeeName, c.CompanyName AS CustomerName FROM Orders o JOIN Shippers s ON o.ShipVia = s.ShipperID JOIN Employees e ON o.EmployeeID = e.EmployeeID JOIN Customers c ON o.CustomerID = c.CustomerID WHERE o.ShippedDate IS NOT NULL"
+  },
+  {
+    "TABLE_SCHEMA": "dbo",
+    "TABLE_NAME": "topSellingProducts",
+    "COLUMN_NAME": "",
+    "TYPE": "QUERY",
+    "FRIENDLY_NAME": "Top 10 Selling Products",
+    "QUERY": "SELECT TOP 10 p.ProductID, p.ProductName, c.CategoryName, s.CompanyName AS SupplierName, SUM(od.Quantity) AS TotalQuantitySold, SUM(od.UnitPrice * od.Quantity * (1 - od.Discount)) AS TotalRevenue FROM Products p JOIN Categories c ON p.CategoryID = c.CategoryID JOIN Suppliers s ON p.SupplierID = s.SupplierID JOIN [Order Details] od ON p.ProductID = od.ProductID GROUP BY p.ProductID, p.ProductName, c.CategoryName, s.CompanyName"
   }
 ]

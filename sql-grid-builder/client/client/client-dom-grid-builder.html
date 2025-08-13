@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="assets/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1.8.21/dayjs.min.js"></script>
-    <script src="https://dl.revealbi.io/reveal/libs/1.7.1/infragistics.reveal.js"></script>
+    <script src="https://dl.revealbi.io/reveal/libs/1.7.6/infragistics.reveal.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/reveal-sdk-wrappers/index.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@revealbi/dom/index.umd.min.js"></script>
 </head>
@@ -107,12 +107,13 @@
         }
 
         async function initialize() {
+
             const tables = await fetchTables();
             const tableSelector = document.getElementById("tableSelector");
-            tables.forEach(table => {
+            tables.filter(table => table.TYPE === "TABLE").forEach(table => {
                 const option = document.createElement("option");
                 option.value = table.TABLE_NAME;
-                option.textContent = table.TABLE_NAME;
+                option.textContent = table.FRIENDLY_NAME || table.TABLE_NAME;
                 tableSelector.appendChild(option);
             });
 

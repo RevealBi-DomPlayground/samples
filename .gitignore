@@ -1,0 +1,47 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+.env
+.DS_Store
+
+# VSCode
+.vscode/
+
+# .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vs/
+
+# Logs
+*.log
+
+# OS generated
+Thumbs.db
+Desktop.ini
+
+# Reveal SDK
+reveal.log
+
+# Others
+*.swp
+*.tmp
+.idea/
+
+# Ignore test coverage
+coverage/
+
+# Ignore build output
+dist/
+build/
+
+# Ignore Python cache (if any)
+__pycache__/
+*.pyc

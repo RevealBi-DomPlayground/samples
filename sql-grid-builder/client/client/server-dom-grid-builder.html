@@ -5,7 +5,7 @@
   <title>Reveal SDK - Load Server-Side Dashboard</title>
   <link rel="stylesheet" href="assets/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-  <script src="https://dl.revealbi.io/reveal/libs/1.7.1/infragistics.reveal.js"></script>
+  <script src="https://dl.revealbi.io/reveal/libs/1.7.6/infragistics.reveal.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@revealbi/dom/index.umd.min.js"></script>
 </head>
 <body>
@@ -88,7 +88,7 @@
       tables.forEach((table) => {
         const option = document.createElement("option");
         option.value = table.TABLE_NAME;
-        option.textContent = table.TABLE_NAME;
+        option.textContent = table.FRIENDLY_NAME || table.TABLE_NAME;
         tableSelector.appendChild(option);
       });
 

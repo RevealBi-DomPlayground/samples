@@ -6,17 +6,24 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>RevealSdk_Net7</RootNamespace>
     <Platforms>AnyCPU;x64</Platforms>
+    <UserSecretsId>c41185fd-6bad-4885-b9e2-bb7bf81b371a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Reveal.Sdk.AspNetCore" Version="1.7.1" />
-    <PackageReference Include="Reveal.Sdk.Data.Microsoft.SqlServer" Version="1.7.1" />
-    <PackageReference Include="Reveal.Sdk.Dom" Version="0.1.346-beta" />
+    <PackageReference Include="Reveal.Sdk.AspNetCore" Version="1.7.6" />
+    <PackageReference Include="Reveal.Sdk.Data.Microsoft.SqlServer" Version="1.7.6" />
+    <PackageReference Include="Reveal.Sdk.Dom" Version="0.1.656-beta" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Dashboards\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Schemas\allowedTables.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

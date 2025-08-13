@@ -5,6 +5,7 @@ using Reveal.Sdk.Dom;
 using Reveal.Sdk.Dom.Data;
 using Reveal.Sdk.Dom.Visualizations;
 using RevealSdk.Server.Reveal;
+using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DataSourceProvider = RevealSdk.Server.Reveal.DataSourceProvider;
@@ -42,8 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-
+// Get the id's & friendly names for the client from allowedTables.json
 app.MapGet("/tables", async () =>
 {
     var filePath = Path.Combine(Directory.GetCurrentDirectory(), "schemas", "allowedTables.json");
@@ -70,6 +70,7 @@ app.MapGet("/tables", async () =>
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status500InternalServerError);
 
+// Get column info for the TypeScript DOM client sample
 app.MapGet("/tables/{tableName}/columns", async (string tableName) =>
 {
     using var connection = new SqlConnection(connectionString);
@@ -122,91 +123,148 @@ app.MapGet("/tables/{tableName}/columns", async (string tableName) =>
 
 
 
-// ---------------------------------------------------------------------------
-//  GET /dashboard/{tableName}
-//
-//  Creates a minimal dashboard (RdashDocument) containing a single GridVisualization
-//  bound to the requested table. It dynamically reads the table's columns
-//  from the database, maps them to Reveal fields, and returns the resulting
-//  RdashDocument as JSON.
-// ---------------------------------------------------------------------------
+
+// Endpoint to get the dashboard for a specific table or query
 app.MapGet("/dashboard/{tableName}", async (string tableName) =>
 {
-
     var underlyingDataPath = "dashboards/underlyingdata.rdash";
     if (File.Exists(underlyingDataPath))
     {
         File.Delete(underlyingDataPath);
     }
 
+    // Check if this is a query-type item or a table from allowedTables.json
+    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "schemas", "allowedTables.json");
+    if (!File.Exists(filePath))
+    {
+        return Results.NotFound("The allowedTables.json file was not found.");
+    }
 
-    // 1) Fetch columns for the specified table
+    // Get table info from JSON
+    var jsonData = await File.ReadAllTextAsync(filePath);
+    var tables = JsonSerializer.Deserialize<List<TableInfo>>(jsonData);
+    var tableInfo = tables?.FirstOrDefault(t => string.Equals(t.TableName, tableName, StringComparison.OrdinalIgnoreCase));
+    
+    if (tableInfo == null)
+    {
+        return Results.NotFound($"Table or query '{tableName}' not found.");
+    }
+
+    // Determine if this is a query or table based on TYPE
+    bool isQuery = string.Equals(tableInfo.Type, "QUERY", StringComparison.OrdinalIgnoreCase);
     List<ColumnInfo> columns;
+
     using (var connection = new SqlConnection(connectionString))
     {
         await connection.OpenAsync();
 
-        string schemaName = "dbo";
-        string query = @"
-            SELECT
-                t.TABLE_NAME,
-                c.COLUMN_NAME,
-                c.DATA_TYPE,
-                c.CHARACTER_MAXIMUM_LENGTH,
-                CASE WHEN c.IS_NULLABLE = 'YES' THEN 'Yes' ELSE 'No' END AS IS_NULLABLE
-            FROM
-                INFORMATION_SCHEMA.TABLES t
-            JOIN
-                INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
-            WHERE
-                t.TABLE_SCHEMA = @SchemaName
-                AND t.TABLE_NAME = @TableName
-            ORDER BY
-                c.ORDINAL_POSITION;";
-
-        using var cmd = new SqlCommand(query, connection);
-        cmd.Parameters.AddWithValue("@SchemaName", schemaName);
-        cmd.Parameters.AddWithValue("@TableName", tableName);
-
-        using var reader = await cmd.ExecuteReaderAsync();
-        columns = new List<ColumnInfo>();
-        while (await reader.ReadAsync())
+        if (isQuery && !string.IsNullOrEmpty(tableInfo.Query))
         {
-            var dataType = reader.GetString(2);
-            columns.Add(new ColumnInfo
+            // QUERY logic: Get column info via sp_describe_first_result_set
+            var tsql = tableInfo.Query;
+
+            using var cmd = new SqlCommand("sys.sp_describe_first_result_set", connection);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@tsql", tsql);
+            cmd.Parameters.AddWithValue("@params", DBNull.Value);
+            cmd.Parameters.AddWithValue("@browse_information_mode", 0);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            columns = new List<ColumnInfo>();
+            while (await reader.ReadAsync())
             {
-                TableName = reader.GetString(0),
-                ColumnName = reader.GetString(1),
-                DataType = dataType,
-                MaxLength = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3),
-                Nullable = reader.GetString(4),
-                RevealDataType = MapSqlDataTypeToRevealDataType(dataType)
-            });
+                var dataType = reader["system_type_name"] as string;
+                var isNullable = (bool)reader["is_nullable"];
+                int? maxLen = reader["max_length"] is short ml && ml > 0 ? (int?)ml : null;
+
+                columns.Add(new ColumnInfo
+                {
+                    TableName = "", // Empty for queries
+                    ColumnName = (reader["name"] as string) ?? "",
+                    DataType = dataType ?? "",
+                    MaxLength = maxLen,
+                    Nullable = isNullable ? "Yes" : "No",
+                    RevealDataType = MapSqlDataTypeToRevealDataType(dataType ?? "")
+                });
+            }
+        }
+        else
+        {
+            // TABLE logic: Get column info from INFORMATION_SCHEMA
+            string schemaName = tableInfo.TableSchema ?? "dbo";
+            string query = @"
+                SELECT
+                    t.TABLE_NAME,
+                    c.COLUMN_NAME,
+                    c.DATA_TYPE,
+                    c.CHARACTER_MAXIMUM_LENGTH,
+                    CASE WHEN c.IS_NULLABLE = 'YES' THEN 'Yes' ELSE 'No' END AS IS_NULLABLE
+                FROM
+                    INFORMATION_SCHEMA.TABLES t
+                JOIN
+                    INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
+                WHERE
+                    t.TABLE_SCHEMA = @SchemaName
+                    AND t.TABLE_NAME = @TableName
+                ORDER BY
+                    c.ORDINAL_POSITION;";
+
+            using var cmd = new SqlCommand(query, connection);
+            cmd.Parameters.AddWithValue("@SchemaName", schemaName);
+            cmd.Parameters.AddWithValue("@TableName", tableName);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            columns = new List<ColumnInfo>();
+            while (await reader.ReadAsync())
+            {
+                var dataType = reader.GetString(2);
+                columns.Add(new ColumnInfo
+                {
+                    TableName = reader.GetString(0),
+                    ColumnName = reader.GetString(1),
+                    DataType = dataType,
+                    MaxLength = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3),
+                    Nullable = reader.GetString(4),
+                    RevealDataType = MapSqlDataTypeToRevealDataType(dataType)
+                });
+            }
         }
     }
 
     if (columns.Count == 0)
     {
-        return Results.NotFound($"Table '{tableName}' not found or has no columns.");
+        return Results.NotFound($"{(isQuery ? "Query" : "Table")} '{tableName}' returned no columns.");
     }
 
-    // 2) Create the main RdashDocument
-    var document = new RdashDocument($"Dynamic Grid - {tableName}");
+    // Create and return the dashboard
+    return await CreateDashboard(columns, tableName, isQuery, tableInfo.FriendlyName);
+});
 
-    // 3) Create the SQL Data Source
+// Helper method to create dashboard
+async Task<IResult> CreateDashboard(List<ColumnInfo> columns, string tableName, bool isQuery = false, string? friendlyName = null)
+{
+    // 2) Create the main RdashDocument
+    var title = friendlyName ?? $"Dynamic Grid - {tableName}";
+    var document = new RdashDocument(title);
+
+    // 3) Create the SQL Data Source with config values
+    var host = builder.Configuration["DatabaseSettings:Host"] ?? "jberes.database.windows.net";
+    var database = builder.Configuration["DatabaseSettings:Database"] ?? "NorthwindCloud";
+    
     var sqlServerDataSource = new MicrosoftSqlServerDataSource()
     {
-        Title = "NorthwindCloud",
-        Subtitle = "Auto-generated",
-        Host = "jberes.database.windows.net",     // or from config
-        Database = "NorthwindCloud",                 // or from config
-        // Provide credential details if needed
+        Title = "NorthwindCloud", // can be dynamically set based on context 
+        Subtitle = "", // optional subtitle
+        Host = host,
+        Database = database,
     };
 
     // 4) Create a DataSourceItem referencing the table and its columns
-    var dataSourceItem = new MicrosoftSqlServerDataSourceItem($"{tableName} Table", tableName, sqlServerDataSource)
+    var dataSourceItem = new MicrosoftSqlServerDataSourceItem(title, tableName, sqlServerDataSource)
     {
-        Table = tableName,
+        Id = isQuery ? tableName : "myTable", // Use tableName as Id for QUERY types to match in DataSourceProvider
+        Table = isQuery ? "" : tableName,     // Set empty string for queries to avoid table lookup
         Subtitle = $"Data from {tableName}",
         Fields = MapColumnsToRevealFields(columns)
     };
@@ -218,8 +276,8 @@ app.MapGet("/dashboard/{tableName}", async (string tableName) =>
         RowSpan = 4,
         Description = $"Grid visualization for {tableName}",
         IsTitleVisible = true,
-        Id = "GridVS",
-        Title = $"Grid - {tableName}"
+        Id = isQuery ? tableName : "myGrid", // Same ID as dataSourceItem for QUERY types
+        Title = title
     };
 
     // 6) Configure some optional Grid settings
@@ -229,33 +287,18 @@ app.MapGet("/dashboard/{tableName}", async (string tableName) =>
         settings.PageSize = 30;
         settings.IsPagingEnabled = true;
         settings.IsFirstColumnFixed = true;
-        // Alignments, etc. as needed...
     });
 
-    // 7) Decide which columns to display in the grid (all columns or a subset)
+    // 7) Decide which columns to display in the grid
     gridVisualization.SetColumns(columns.ConvertAll(c => c.ColumnName).ToArray());
-
-    // 8) Optionally add some filters or quick filters (depends on your scenario)
-    // For demonstration, we'll add a quick filter if we see any numeric columns
-    //var numericColumns = columns.FindAll(c => c.RevealDataType == "Number");
-    //if (numericColumns.Count > 0)
-    //{
-    //    gridVisualization.AddFilters(numericColumns[0].ColumnName);
-    //}
 
     // 9) Add the visualization to the dashboard document
     document.Visualizations.Add(gridVisualization);
 
-    // 10) Return the document to the caller
-    //     The Reveal SDK (AddReveal in the pipeline) typically handles serialization,
-    //     but you can also explicitly return JSON if you like.
-    //return document.ToJsonString();
+    // 10) Save and return the document
     document.Save("dashboards/underlyingdata.rdash");
-
     return Results.Ok(document.ToJsonString());
-
-});
-
+}
 
 static List<IField> MapColumnsToRevealFields(List<ColumnInfo> columns)
 {
@@ -311,7 +354,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.Run();
 
-
 public class TableInfo
 {
     [JsonPropertyName("TABLE_SCHEMA")]
@@ -322,15 +364,23 @@ public class TableInfo
 
     [JsonPropertyName("COLUMN_NAME")]
     public string? ColumnName { get; set; }
+    
+    [JsonPropertyName("TYPE")]
+    public string? Type { get; set; }
+    
+    [JsonPropertyName("FRIENDLY_NAME")]
+    public string? FriendlyName { get; set; }
+    
+    [JsonPropertyName("QUERY")]
+    public string? Query { get; set; }
 }
 
 public class ColumnInfo
 {
-    public required string TableName { get; set; }
+    public required string? TableName { get; set; }
     public required string ColumnName { get; set; }
     public required string DataType { get; set; }
     public string? RevealDataType { get; set; }
-
     public int? MaxLength { get; set; }
     public string? Nullable { get; set; }
 }
