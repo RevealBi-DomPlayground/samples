@@ -249,8 +249,8 @@ async Task<IResult> CreateDashboard(List<ColumnInfo> columns, string tableName, 
     var document = new RdashDocument(title);
 
     // 3) Create the SQL Data Source with config values
-    var host = builder.Configuration["DatabaseSettings:Host"] ?? "jberes.database.windows.net";
-    var database = builder.Configuration["DatabaseSettings:Database"] ?? "NorthwindCloud";
+    var host = builder.Configuration["DatabaseSettings:Host"];
+    var database = builder.Configuration["DatabaseSettings:Database"];
     
     var sqlServerDataSource = new MicrosoftSqlServerDataSource()
     {
