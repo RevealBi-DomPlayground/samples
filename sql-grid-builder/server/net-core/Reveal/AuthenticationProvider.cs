@@ -32,7 +32,7 @@ namespace RevealSdk.Server.Reveal
                 else
                 {
                     // Fallback to hardcoded values as a safety measure
-                    userCredential = new RVUsernamePasswordDataSourceCredential("jasonberes", "=RevealJasonSdk09");
+                    userCredential = new RVUsernamePasswordDataSourceCredential("", "");
                 }
             }
             return Task.FromResult(userCredential);
